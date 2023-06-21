@@ -18,7 +18,35 @@ struct Phoneme
   uint16_t *pSamples = nullptr;
 };
 
+struct WaveHeader
+{
+  char chunkIDRiff[4];
+  uint32_t chunkSizeRiff;
+  char waveID[4];
+
+  uint32_t chunkIDfmt;
+  uint32_t chunkkSizefmt;
+  uint16_t formatTag; // coc sagt: Audio format 1=PCM.
+  uint16_t channelCount;
+  uint32_t sampleRate;
+  uint32_t bytesPerSec;
+  uint16_t blockAlign;
+  uint16_t bitsPerSample;
+  
+  char chunkIDdata[4];
+  uint32_t chunkSizeData;
+};
+
 #define PANIC_IF(x) do { if (!(x)) __debugbreak(); return; /* Leaking objects as a service */ } while (false)
+
+#define STRINGIFY(x) #x
+
+#define ASSERT(a) \
+  do \
+  { if (!(a)) \
+    {  puts("Assertion Failed ('" STRINGIFY(a) "') in File '" __FILE__ "' (Line " STRINGIFY(__LINE__) ")"); \
+      __debugbreak(); \
+  } } while (0)
 
 void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 {
@@ -47,12 +75,36 @@ void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 
 static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
 {
-  char filename[256];
+  //char filename[256];
   // TODO: Get Filename.
+  const char *filename = "audio/test.wav";
 
-  // TODO: Load File
+  uint8_t *pFileContent = nullptr;
+  size_t size = 0;
 
-  // TODO: Parse WAV.
+  // Load File
+  ReadFile(filename, &pFileContent, &size);
+
+  // Parse WAV.
+  ASSERT(pFileContent != nullptr);
+  
+  WaveHeader header;
+  memcpy(&header, pFileContent, sizeof(WaveHeader));
+
+  ASSERT(header.waveID[0] == 'W' && header.waveID[1] == 'A' && header.waveID[2] == 'V' && header.waveID[3] == 'E');
+  ASSERT(header.formatTag == 1); // do we have PCM format?
+  ASSERT(header.channelCount == 1);
+  ASSERT(header.bitsPerSample == 16);
+  ASSERT(header.sampleRate == 48000);
+
+  pPhoneme->sampleCount = header.chunkSizeData / sizeof(uint16_t);
+  pPhoneme->pSamples = reinterpret_cast<uint16_t *>(malloc(header.chunkSizeData));
+  ASSERT(pPhoneme->pSamples);
+
+  memcpy(pPhoneme->pSamples, pFileContent + sizeof(WaveHeader), header.chunkSizeData);
+
+  free(pFileContent);
+  pFileContent = nullptr;
 }
 
 static Phoneme GetPhoneme(const PhonemeType type)
