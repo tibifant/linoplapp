@@ -24,7 +24,7 @@ struct WaveHeader
   uint32_t chunkSizeRiff;
   char waveID[4];
 
-  uint32_t chunkIDfmt;
+  char chunkIDfmt[4];
   uint32_t chunkkSizefmt;
   uint16_t formatTag; // coc sagt: Audio format 1=PCM.
   uint16_t channelCount;
@@ -37,7 +37,7 @@ struct WaveHeader
   uint32_t chunkSizeData;
 };
 
-#define PANIC_IF(x) do { if (!(x)) __debugbreak(); return; /* Leaking objects as a service */ } while (false)
+#define PANIC_IF(x) do { if (x) { __debugbreak(); return; /* Leaking objects as a service */ } } while (false)
 
 #define STRINGIFY(x) #x
 
@@ -50,16 +50,14 @@ struct WaveHeader
 
 void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 {
-  FILE *pFile = nullptr;
-
-  pFile = fopen(filename, "rb");
+  FILE *pFile = fopen(filename, "rb");
   PANIC_IF(pFile == nullptr);
 
-  PANIC_IF(0 != fseek(pFile, 0, SEEK_END), lsR_IOFailure);
+  PANIC_IF(0 != fseek(pFile, 0, SEEK_END));
 
   const size_t length = ftell(pFile);
 
-  PANIC_IF(0 != fseek(pFile, 0, SEEK_SET), lsR_IOFailure);
+  PANIC_IF(0 != fseek(pFile, 0, SEEK_SET));
 
   *ppData = reinterpret_cast<uint8_t *>(malloc(length));
 
@@ -75,9 +73,11 @@ void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 
 static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
 {
+  (void)type;
+
   //char filename[256];
   // TODO: Get Filename.
-  const char *filename = "audio/test.wav";
+  const char *filename = "C:\\git\\linoplapp\\builds\\bin\\audio\\test.wav";
 
   uint8_t *pFileContent = nullptr;
   size_t size = 0;
@@ -91,8 +91,9 @@ static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
   WaveHeader header;
   memcpy(&header, pFileContent, sizeof(WaveHeader));
 
+  ASSERT(header.chunkIDRiff[0] == 'R' && header.chunkIDRiff[1] == 'I' && header.chunkIDRiff[2] == 'F' && header.chunkIDRiff[3] == 'F');
   ASSERT(header.waveID[0] == 'W' && header.waveID[1] == 'A' && header.waveID[2] == 'V' && header.waveID[3] == 'E');
-  ASSERT(header.formatTag == 1); // do we have PCM format?
+  ASSERT(header.formatTag == 1); // Checking for PCM format
   ASSERT(header.channelCount == 1);
   ASSERT(header.bitsPerSample == 16);
   ASSERT(header.sampleRate == 48000);
@@ -133,15 +134,56 @@ static size_t AppendPhoneme(uint16_t *pBufferPosition, const PhonemeType type)
 
 static void WriteToWav(const uint16_t *pSamples, const size_t sampleCount, const char *filename)
 {
-  // TODO: Write Stuff.
+  // Open file.
+  FILE *pFile = fopen(filename, "wb");
+
+  // Make header. 
+  WaveHeader header;
+
+  const char riff[] = "RIFF";
+  memcpy(&header.chunkIDRiff, riff, 4);
+  
+  header.chunkSizeRiff = (uint32_t)(sampleCount * sizeof(uint16_t) + sizeof(WaveHeader) - 8);
+  
+  const char wave[] = "WAVE";
+  memcpy(&header.waveID, wave, 4);
+
+  const char fmt[] = "fmt ";
+  memcpy(&header.chunkIDfmt, fmt, 4);
+
+  header.chunkkSizefmt = 16;
+  header.formatTag = 1;
+  header.channelCount = 1;
+  header.sampleRate = 48000;
+  
+  header.bitsPerSample = 16;
+  header.blockAlign = (header.bitsPerSample + 7) / 8; // Wikipedia says so. For Stereo: multiply by `channelCount`.
+
+  header.bytesPerSec = header.sampleRate * header.blockAlign;
+
+  const char data[] = "data";
+  memcpy(&header.chunkIDdata, data, 4);
+
+  header.chunkSizeData = (uint32_t)(sampleCount * sizeof(uint16_t));
+
+  // Write header to file.
+  fwrite(&header, 1, sizeof(WaveHeader), pFile);
+
+  // Write data to file.
+  fwrite(pSamples, sizeof(uint16_t), sampleCount, pFile);
+
+  fclose(pFile);
 }
 
 int32_t main(const int32_t argc, char **pArgv)
 {
+  (void)argc;
+  (void)pArgv;
+
   // TODO: Load File with Symbols.
   
-  PhonemeType *pParsedPhonemes = nullptr;
-  size_t parsedPhonemeCount = 0;
+  PhonemeType pParsedPhonemes[1] = {};
+  size_t parsedPhonemeCount = 1;
 
   // TODO: Parse input to phoneme types.
 
@@ -160,8 +202,8 @@ int32_t main(const int32_t argc, char **pArgv)
   WriteToWav(pOutSamples, outSampleIndex, "out.wav");
 
   // Cleanup.
-  free(pParsedPhonemes);
-  pParsedPhonemes = nullptr;
+  //free(pParsedPhonemes);
+  //pParsedPhonemes = nullptr;
 
   free(pOutSamples);
   pOutSamples = nullptr;
