@@ -6,10 +6,62 @@
 
 enum PhonemeType
 {
-  pt_,
+  pt_ei,
+  pt_au,
+  pt_aale,
+  pt_assel,
+  pt_ober,
+  pt_bass,
+  pt_chemie,
+  pt_docht,
+  pt_eber,
+  pt_egoist,
+  pt_aehre,
+  pt_etwas,
+  pt_schwa,
+  pt_viel,
+  pt_geld,
+  pt_hase,
+  pt_ihm,
+  pt_imitat,
+  pt_innen,
+  pt_jeder,
+  pt_kiel,
+  pt_last,
+  pt_made,
+  pt_ng,
+  pt_name,
+  pt_oetztal,
+  pt_ober,
+  pt_obelisk,
+  pt_eule,
+  pt_ordnung,
+  pt_oel,
+  pt_pfote,
+  pt_puppe,
+  pt_rose,
+  pt_skopus,
+  pt_schwere,
+  pt_tschechisch,
+  pt_zwiebel,
+  pt_takt,
+  pt_uhu,
+  pt_ukulele,
+  pt_butt,
+  pt_weit,
+  pt_nacht,
+  pt_ueber,
+  pt_buero,
+  pt_uecker,
+  pt_sahne,
+  pt_space,
+  pt_dot,
+  pt_comma,
 
   _PhonemeType_Count
 };
+
+static const char *_PhonemeStrings[_PhonemeType_Count] = { "aɪ", "aʊ", "aː", "a", "ɐ", "b", "ç", "d", "eː", "e", "ɛː", "ɛ", "ə", "f", "ɡ", "h", "iː", "i", "ɪ", "j", "k", "l", "m", "ŋ", "n", "œ", "oː", "o", "ɔʏ", "ɔ", "øː", "pf", "p", "ʁ", "s", "ʃ", "tʃ", "ts", "t", "uː", "u", "ʊ", "v", "x", "yː", "y", "ʏ", "z", " ", ".", "," };
 
 struct Phoneme 
 {
@@ -157,7 +209,7 @@ static void WriteToWav(const uint16_t *pSamples, const size_t sampleCount, const
   header.sampleRate = 48000;
   
   header.bitsPerSample = 16;
-  header.blockAlign = (header.bitsPerSample + 7) / 8; // Wikipedia says so. For Stereo: multiply by `channelCount`.
+  header.blockAlign = (header.bitsPerSample + 7) / 8; // Wikipedia says so. For more than one channel: multiply by `channelCount`.
 
   header.bytesPerSec = header.sampleRate * header.blockAlign;
 
@@ -181,11 +233,28 @@ int32_t main(const int32_t argc, char **pArgv)
   (void)pArgv;
 
   // TODO: Load File with Symbols.
+  uint8_t *pFileContent = nullptr;
+  size_t size = 0;
+
+  ReadFile("in.txt", &pFileContent, &size);
   
-  PhonemeType pParsedPhonemes[1] = {};
-  size_t parsedPhonemeCount = 1;
+  PhonemeType *pParsedPhonemes = nullptr;
+  size_t parsedPhonemeCount = 0;
 
   // TODO: Parse input to phoneme types.
+  
+  bool hasData = true;
+
+  while (hasData)
+  {
+    parsedPhonemeCount++;
+
+    for (size_t i = 0; i < _PhonemeType_Count; i++)
+    {
+      if (*pFileContent == (uint8_t)strlen(_PhonemeStrings[i]))
+        pParsedPhonemes[parsedPhonemeCount] = PhonemeType(i);
+    }
+  }
 
   size_t requiredOutSampleCount = 0;
 
