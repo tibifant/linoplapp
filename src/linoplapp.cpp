@@ -57,9 +57,8 @@ X(pt_space) \
 X(pt_dot) \
 X(pt_comma)
 
-#define SEPERATE_WITH_COMMA(a) a ,
-
-#define STRINGIFY(x) #x
+#define SEPERATE_WITH_COMMA(a) a,
+#define FILEPATH(a) #a".wav"
 
 enum PhonemeType
 {
@@ -70,7 +69,7 @@ enum PhonemeType
 
 static const char *_PhonemeStrings[_PhonemeType_Count] = { "aɪ", "aʊ", "aː", "a", "ɐ", "b", "ç", "d", "eː", "e", "ɛː", "ɛ", "ə", "f", "ɡ", "h", "iː", "i", "ɪ", "j", "k", "l", "m", "ŋ", "n", "œ", "oː", "o", "ɔʏ", "ɔ", "øː", "pf", "p", "ʁ", "s", "ʃ", "tʃ", "ts", "t", "uː", "u", "ʊ", "v", "x", "yː", "y", "ʏ", "z", " ", ".", "," };
 
-char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO(STRINGIFY) };
+static const char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO(FILEPATH) };
 
 struct Phoneme 
 {
@@ -99,6 +98,8 @@ struct WaveHeader
 };
 
 #define PANIC_IF(x) do { if (x) { __debugbreak(); return; /* Leaking objects as a service */ } } while (false)
+
+#define STRINGIFY(x) #x
 
 #define ASSERT(a) \
   do \
@@ -132,41 +133,52 @@ void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 
 static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
 {
-  char *name = _PhonemeFileNames[type];
-  char *fileEnding = ".wav";
-  // TODO: Get Filename.
-  char *filename = "C:\\git\\linoplapp\\builds\\bin\\audio\\";
-  *filename += *name;
-  *filename += *fileEnding;
+  // TODO: Handle " " & "." & ","
+  if (type == pt_space)
+  {
+    pPhoneme->pSamples = 0;
+  }
+  else if (type == pt_dot)
+  {
+    pPhoneme->pSamples = (uint64_t)0;
+  }
+  else if (type == pt_comma)
+  {
+    pPhoneme->pSamples = (uint32_t)0;
+  }
+  else
+  {
+    // Get Filename.
+    const char *filename = _PhonemeFileNames[type];
 
+    uint8_t *pFileContent = nullptr;
+    size_t size = 0;
 
-  uint8_t *pFileContent = nullptr;
-  size_t size = 0;
+    // Load File
+    ReadFile(filename, &pFileContent, &size);
 
-  // Load File
-  ReadFile(filename, &pFileContent, &size);
+    // Parse WAV.
+    ASSERT(pFileContent != nullptr);
 
-  // Parse WAV.
-  ASSERT(pFileContent != nullptr);
-  
-  WaveHeader header;
-  memcpy(&header, pFileContent, sizeof(WaveHeader));
+    WaveHeader header;
+    memcpy(&header, pFileContent, sizeof(WaveHeader));
 
-  ASSERT(header.chunkIDRiff[0] == 'R' && header.chunkIDRiff[1] == 'I' && header.chunkIDRiff[2] == 'F' && header.chunkIDRiff[3] == 'F');
-  ASSERT(header.waveID[0] == 'W' && header.waveID[1] == 'A' && header.waveID[2] == 'V' && header.waveID[3] == 'E');
-  ASSERT(header.formatTag == 1); // Checking for PCM format
-  ASSERT(header.channelCount == 1);
-  ASSERT(header.bitsPerSample == 16);
-  ASSERT(header.sampleRate == 48000);
+    ASSERT(header.chunkIDRiff[0] == 'R' && header.chunkIDRiff[1] == 'I' && header.chunkIDRiff[2] == 'F' && header.chunkIDRiff[3] == 'F');
+    ASSERT(header.waveID[0] == 'W' && header.waveID[1] == 'A' && header.waveID[2] == 'V' && header.waveID[3] == 'E');
+    ASSERT(header.formatTag == 1); // Checking for PCM format
+    ASSERT(header.channelCount == 1);
+    ASSERT(header.bitsPerSample == 16);
+    ASSERT(header.sampleRate == 48000);
 
-  pPhoneme->sampleCount = header.chunkSizeData / sizeof(uint16_t);
-  pPhoneme->pSamples = reinterpret_cast<uint16_t *>(malloc(header.chunkSizeData));
-  ASSERT(pPhoneme->pSamples);
+    pPhoneme->sampleCount = header.chunkSizeData / sizeof(uint16_t);
+    pPhoneme->pSamples = reinterpret_cast<uint16_t *>(malloc(header.chunkSizeData));
+    ASSERT(pPhoneme->pSamples);
 
-  memcpy(pPhoneme->pSamples, pFileContent + sizeof(WaveHeader), header.chunkSizeData);
+    memcpy(pPhoneme->pSamples, pFileContent + sizeof(WaveHeader), header.chunkSizeData);
 
-  free(pFileContent);
-  pFileContent = nullptr;
+    free(pFileContent);
+    pFileContent = nullptr;
+  }
 }
 
 static Phoneme GetPhoneme(const PhonemeType type)
