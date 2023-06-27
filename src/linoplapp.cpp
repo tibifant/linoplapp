@@ -4,64 +4,73 @@
 #include <malloc.h>
 #include <string.h>
 
+#define PHONEMETYPE_X_MACRO(X) \
+X(pt_ei) \
+X(pt_au) \
+X(pt_aale) \
+X(pt_assel) \
+X(pt_besser) \
+X(pt_bass) \
+X(pt_chemie) \
+X(pt_docht) \
+X(pt_eber) \
+X(pt_egoist) \
+X(pt_aehre) \
+X(pt_etwas) \
+X(pt_schwa) \
+X(pt_viel) \
+X(pt_geld) \
+X(pt_hase) \
+X(pt_ihm) \
+X(pt_imitat) \
+X(pt_innen) \
+X(pt_jeder) \
+X(pt_kiel) \
+X(pt_last) \
+X(pt_made) \
+X(pt_ng) \
+X(pt_name) \
+X(pt_oetztal) \
+X(pt_ober) \
+X(pt_obelisk) \
+X(pt_eule) \
+X(pt_ordnung) \
+X(pt_oel) \
+X(pt_pfote) \
+X(pt_puppe) \
+X(pt_rose) \
+X(pt_skopus) \
+X(pt_schwere) \
+X(pt_tschechisch) \
+X(pt_zwiebel) \
+X(pt_takt) \
+X(pt_uhu) \
+X(pt_ukulele) \
+X(pt_butt) \
+X(pt_weit) \
+X(pt_nacht) \
+X(pt_ueber) \
+X(pt_buero) \
+X(pt_uecker) \
+X(pt_sahne) \
+X(pt_space) \
+X(pt_dot) \
+X(pt_comma)
+
+#define SEPERATE_WITH_COMMA(a) a ,
+
+#define STRINGIFY(x) #x
+
 enum PhonemeType
 {
-  pt_ei,
-  pt_au,
-  pt_aale,
-  pt_assel,
-  pt_ober,
-  pt_bass,
-  pt_chemie,
-  pt_docht,
-  pt_eber,
-  pt_egoist,
-  pt_aehre,
-  pt_etwas,
-  pt_schwa,
-  pt_viel,
-  pt_geld,
-  pt_hase,
-  pt_ihm,
-  pt_imitat,
-  pt_innen,
-  pt_jeder,
-  pt_kiel,
-  pt_last,
-  pt_made,
-  pt_ng,
-  pt_name,
-  pt_oetztal,
-  pt_ober,
-  pt_obelisk,
-  pt_eule,
-  pt_ordnung,
-  pt_oel,
-  pt_pfote,
-  pt_puppe,
-  pt_rose,
-  pt_skopus,
-  pt_schwere,
-  pt_tschechisch,
-  pt_zwiebel,
-  pt_takt,
-  pt_uhu,
-  pt_ukulele,
-  pt_butt,
-  pt_weit,
-  pt_nacht,
-  pt_ueber,
-  pt_buero,
-  pt_uecker,
-  pt_sahne,
-  pt_space,
-  pt_dot,
-  pt_comma,
+  PHONEMETYPE_X_MACRO(SEPERATE_WITH_COMMA)
 
   _PhonemeType_Count
 };
 
 static const char *_PhonemeStrings[_PhonemeType_Count] = { "aɪ", "aʊ", "aː", "a", "ɐ", "b", "ç", "d", "eː", "e", "ɛː", "ɛ", "ə", "f", "ɡ", "h", "iː", "i", "ɪ", "j", "k", "l", "m", "ŋ", "n", "œ", "oː", "o", "ɔʏ", "ɔ", "øː", "pf", "p", "ʁ", "s", "ʃ", "tʃ", "ts", "t", "uː", "u", "ʊ", "v", "x", "yː", "y", "ʏ", "z", " ", ".", "," };
+
+char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO(STRINGIFY) };
 
 struct Phoneme 
 {
@@ -90,8 +99,6 @@ struct WaveHeader
 };
 
 #define PANIC_IF(x) do { if (x) { __debugbreak(); return; /* Leaking objects as a service */ } } while (false)
-
-#define STRINGIFY(x) #x
 
 #define ASSERT(a) \
   do \
@@ -125,11 +132,13 @@ void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 
 static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
 {
-  (void)type;
-
-  //char filename[256];
+  char *name = _PhonemeFileNames[type];
+  char *fileEnding = ".wav";
   // TODO: Get Filename.
-  const char *filename = "C:\\git\\linoplapp\\builds\\bin\\audio\\test.wav";
+  char *filename = "C:\\git\\linoplapp\\builds\\bin\\audio\\";
+  *filename += *name;
+  *filename += *fileEnding;
+
 
   uint8_t *pFileContent = nullptr;
   size_t size = 0;
@@ -229,30 +238,45 @@ static void WriteToWav(const uint16_t *pSamples, const size_t sampleCount, const
 
 int32_t main(const int32_t argc, char **pArgv)
 {
-  (void)argc;
-  (void)pArgv;
+  if (argc != 3)
+  {
+    puts("Usage: linoplapp <infile.txt> <outfile.wav>");
+    return 1;
+  }
 
-  // TODO: Load File with Symbols.
+  // Load File with Symbols.
   uint8_t *pFileContent = nullptr;
   size_t size = 0;
 
-  ReadFile("in.txt", &pFileContent, &size);
+  ReadFile(pArgv[1], &pFileContent, &size);
   
-  PhonemeType *pParsedPhonemes = nullptr;
+  PhonemeType *pParsedPhonemes = reinterpret_cast<PhonemeType *>(malloc(size * sizeof(PhonemeType)));
+  ASSERT(pParsedPhonemes != nullptr);
+
   size_t parsedPhonemeCount = 0;
 
-  // TODO: Parse input to phoneme types.
-  
-  bool hasData = true;
-
-  while (hasData)
+  // Parse input to phoneme types.
+  for (size_t offset = 0; offset < size;)
   {
-    parsedPhonemeCount++;
+    const size_t offsetBefore = offset;
 
     for (size_t i = 0; i < _PhonemeType_Count; i++)
     {
-      if (*pFileContent == (uint8_t)strlen(_PhonemeStrings[i]))
-        pParsedPhonemes[parsedPhonemeCount] = PhonemeType(i);
+      const size_t phonemeLength = strlen(_PhonemeStrings[i]);
+
+      if (offset + phonemeLength <= size && memcmp(pFileContent + offset, _PhonemeStrings[i], phonemeLength) == 0)
+      {
+        pParsedPhonemes[parsedPhonemeCount] = (PhonemeType)i;
+        parsedPhonemeCount++;
+        offset += phonemeLength;
+        break;
+      }
+    }
+
+    if (offsetBefore == offset)
+    {
+      printf("Invalid Symbol '%c' at position %" PRIu64 ".\n", pFileContent[offset], offset);
+      ASSERT(false);
     }
   }
 
@@ -268,11 +292,11 @@ int32_t main(const int32_t argc, char **pArgv)
     outSampleIndex += AppendPhoneme(pOutSamples + outSampleIndex, pParsedPhonemes[i]);
 
   // Write WAV File.
-  WriteToWav(pOutSamples, outSampleIndex, "out.wav");
+  WriteToWav(pOutSamples, outSampleIndex, pArgv[2]);
 
   // Cleanup.
-  //free(pParsedPhonemes);
-  //pParsedPhonemes = nullptr;
+  free(pParsedPhonemes);
+  pParsedPhonemes = nullptr;
 
   free(pOutSamples);
   pOutSamples = nullptr;
