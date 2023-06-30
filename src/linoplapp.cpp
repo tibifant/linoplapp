@@ -5,9 +5,13 @@
 #include <string.h>
 
 #define PHONEMETYPE_X_MACRO(X) \
+X(pt_ei_stressed) \
 X(pt_ei) \
+X(pt_au_stressed) \
 X(pt_au) \
-X(pt_aale) \
+X(pt_assel_long_stressed) \
+X(pt_assel_long) \
+X(pt_assel_stressed) \
 X(pt_assel) \
 X(pt_der) \
 X(pt_besser) \
@@ -15,17 +19,22 @@ X(pt_bass) \
 X(pt_chemie) \
 X(pt_dschungel) \
 X(pt_docht) \
-X(pt_eber) \
+X(pt_egoist_long_stressed) \
+X(pt_egoist_long) \
 X(pt_egoist) \
-X(pt_aehre) \
+X(pt_etwas_long_stressed) \
+X(pt_etwas_long) \
+X(pt_etwas_stressed) \
 X(pt_etwas) \
 X(pt_schwa) \
 X(pt_viel) \
 X(pt_geld) \
 X(pt_hase) \
 X(pt_studie) \
-X(pt_ihm) \
+X(pt_imitat_long_stressed) \
+X(pt_imitat_long) \
 X(pt_imitat) \
+X(pt_innen_stressed) \
 X(pt_innen) \
 X(pt_jeder) \
 X(pt_kiel) \
@@ -36,11 +45,17 @@ X(pt_made) \
 X(pt_ng) \
 X(pt_klatschen) \
 X(pt_name) \
+X(pt_oetztal_stressed) \
 X(pt_oetztal) \
-X(pt_ober) \
+X(pt_obelisk_long_stressed) \
+X(pt_obelisk_long) \
 X(pt_obelisk) \
-X(pt_eule) \
+X(pt_eu_stressed) \
+X(pt_eu) \
+X(pt_ordnung_stressed) \
 X(pt_ordnung) \
+X(pt_oel_long_stressed) \
+X(pt_oel_long) \
 X(pt_oel) \
 X(pt_pfote) \
 X(pt_puppe) \
@@ -51,20 +66,24 @@ X(pt_tschechisch) \
 X(pt_zwiebel) \
 X(pt_takt) \
 X(pt_linguistik) \
-X(pt_uhu) \
+X(pt_ukulele_long_stressed) \
+X(pt_ukulele_long) \
 X(pt_ukulele) \
 X(pt_ui) \
+X(pt_und_stressed) \
 X(pt_und) \
 X(pt_weit) \
 X(pt_nacht) \
-X(pt_ueber) \
+X(pt_buero_long_stressed) \
+X(pt_buero_long) \
 X(pt_buero) \
 X(pt_uecker) \
 X(pt_sahne) \
 X(pt_genie) \
 X(pt_space) \
 X(pt_dot) \
-X(pt_comma)
+X(pt_comma) \
+X(pt_stressed)
 
 #define SEPERATE_WITH_COMMA(a) a,
 #define FILEPATH(a) #a".wav"
@@ -76,7 +95,7 @@ enum PhonemeType
   _PhonemeType_Count
 };
 
-static const char *_PhonemeStrings[_PhonemeType_Count] = { "aɪ̯", "aʊ̯", "aː", "a", "ɐ̯", "ɐ", "b", "ç", "​d͡ʒ​", "d", "eː", "e", "ɛː", "ɛ", "ə", "f", "ɡ", "h", "i̯", "iː", "i", "ɪ", "j", "k", "l̩", "l", "m̩", "m", "ŋ", "n̩", "n", "œ", "oː", "o", "ɔɪ̯", "ɔ", "øː", "p͡f", "p", "ʁ", "s", "ʃ", "t͡ʃ", "t͡s", "t", "u̯", "uː", "u", "ʊɪ̯", "ʊ", "v", "x", "yː", "y", "ʏ", "z", "​ʒ", " ", ".", ","};
+static const char *_PhonemeStrings[_PhonemeType_Count] = { "ˈaɪ̯", "aɪ̯", "ˈaʊ̯", "aʊ̯", "ˈaː", "aː", "ˈa", "a", "ɐ̯", "ɐ", "b", "ç", "​d͡ʒ​", "d", "ˈeː", "eː", "e", "ˈɛː", "ɛː", "ˈɛ", "ɛ", "ə", "f", "ɡ", "h", "i̯", "ˈiː", "iː", "i", "ˈɪ", "ɪ", "j", "k", "l̩", "l", "m̩", "m", "ŋ", "n̩", "n", "ˈœ", "œ", "ˈoː", "oː", "o", "ˈɔɪ̯", "ɔɪ̯", "ˈɔ", "ɔ", "ˈøː", "øː","ø", "p͡f", "p", "ʁ", "s", "ʃ", "t͡ʃ", "t͡s", "t", "u̯", "ˈuː", "uː", "u", "ʊɪ̯", "ˈʊ", "ʊ", "v", "x", "ˈyː", "yː", "y", "ˈʏ", "ʏ", "z", "​ʒ", " ", ".", ",", "ˈ"};
 
 static const char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO(FILEPATH) };
 
