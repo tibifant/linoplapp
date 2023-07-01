@@ -77,6 +77,7 @@ X(pt_nacht) \
 X(pt_buero_long_stressed) \
 X(pt_buero_long) \
 X(pt_buero) \
+X(pt_uecker_stressed) \
 X(pt_uecker) \
 X(pt_sahne) \
 X(pt_genie) \
