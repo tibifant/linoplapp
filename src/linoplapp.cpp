@@ -96,9 +96,11 @@ enum PhonemeType
   _PhonemeType_Count
 };
 
-static const char *_PhonemeStrings[_PhonemeType_Count] = { "ˈaɪ̯", "aɪ̯", "ˈaʊ̯", "aʊ̯", "ˈaː", "aː", "ˈa", "a", "ɐ̯", "ɐ", "b", "ç", "​d͡ʒ​", "d", "ˈeː", "eː", "e", "ˈɛː", "ɛː", "ˈɛ", "ɛ", "ə", "f", "ɡ", "h", "i̯", "ˈiː", "iː", "i", "ˈɪ", "ɪ", "j", "k", "l̩", "l", "m̩", "m", "ŋ", "n̩", "n", "ˈœ", "œ", "ˈoː", "oː", "o", "ˈɔɪ̯", "ɔɪ̯", "ˈɔ", "ɔ", "ˈøː", "øː","ø", "p͡f", "p", "ʁ", "s", "ʃ", "t͡ʃ", "t͡s", "t", "u̯", "ˈuː", "uː", "u", "ʊɪ̯", "ˈʊ", "ʊ", "v", "x", "ˈyː", "yː", "y", "ˈʏ", "ʏ", "z", "​ʒ", " ", ".", ",", "ˈ"};
+static const char *_PhonemeStrings[_PhonemeType_Count] = { "ˈaɪ̯", "aɪ̯", "ˈaʊ̯", "aʊ̯", "ˈaː", "aː", "ˈa", "a", "ɐ̯", "ɐ", "b", "ç", "​d͡ʒ​", "d", "ˈeː", "eː", "e", "ˈɛː", "ɛː", "ˈɛ", "ɛ", "ə", "f", "ɡ", "h", "i̯", "ˈiː", "iː", "i", "ˈɪ", "ɪ", "j", "k", "l̩", "l", "m̩", "m", "ŋ", "n̩", "n", "ˈœ", "œ", "ˈoː", "oː", "o", "ˈɔɪ̯", "ɔɪ̯", "ˈɔ", "ɔ", "ˈøː", "øː", "ø", "p͡f", "p", "ʁ", "s", "ʃ", "t͡ʃ", "t͡s", "t", "u̯", "ˈuː", "uː", "u", "ʊɪ̯", "ˈʊ", "ʊ", "v", "x", "ˈyː", "yː", "y", "ˈʏ", "ʏ", "z", "​ʒ", " ", ".", ",", "ˈ"};
 
 static const char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO(FILEPATH) };
+
+static const PhonemeType _Vowels[18] = { pt_ei, pt_au, pt_assel_long, pt_assel, pt_egoist_long, pt_etwas_long, pt_etwas, pt_imitat_long, pt_innen, pt_oetztal, pt_obelisk_long, pt_eu, pt_ordnung, pt_oel_long, pt_ukulele_long, pt_und, pt_buero_long, pt_uecker };
 
 struct Phoneme 
 {
@@ -137,6 +139,8 @@ struct WaveHeader
       __debugbreak(); \
   } } while (0)
 
+#define ARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
+
 void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 {
   FILE *pFile = fopen(filename, "rb");
@@ -165,15 +169,15 @@ static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
   // TODO: Handle " " & "." & ","
   if (type == pt_space)
   {
-    pPhoneme->pSamples = 0;
+    memset(pPhoneme->pSamples, 0, 160);
   }
   else if (type == pt_dot)
   {
-    pPhoneme->pSamples = (uint64_t)0;
+    memset(pPhoneme->pSamples, 0, 320);
   }
   else if (type == pt_comma)
   {
-    pPhoneme->pSamples = (uint32_t)0;
+    memset(pPhoneme->pSamples, 0, 240);
   }
   else
   {
@@ -295,6 +299,7 @@ int32_t main(const int32_t argc, char **pArgv)
   ASSERT(pParsedPhonemes != nullptr);
 
   size_t parsedPhonemeCount = 0;
+  bool isStressed = false;
 
   // Parse input to phoneme types.
   for (size_t offset = 0; offset < size;)
@@ -307,7 +312,32 @@ int32_t main(const int32_t argc, char **pArgv)
 
       if (offset + phonemeLength <= size && memcmp(pFileContent + offset, _PhonemeStrings[i], phonemeLength) == 0)
       {
-        pParsedPhonemes[parsedPhonemeCount] = (PhonemeType)i;
+        if (i == _PhonemeType_Count - 1) // Stressed-Symbol is the last.
+          isStressed = true;
+        bool foundVowel = false;
+
+        if (isStressed)
+        {
+          if (i == pt_space)
+          {
+            printf("Heureka! Somewhere in your input file has been a vowel of which a stressed version should be added. (Word before position %" PRIu64 ".)\n", offset);
+            ASSERT(false);
+          }
+
+          for (size_t j = 0; j < ARRAYSIZE(_Vowels); j++)
+          {
+            if (i == j)
+            {
+              pParsedPhonemes[parsedPhonemeCount] = (PhonemeType)(i - 1); // The stressed version of a vowel always comes one before the vowel.
+              isStressed = false;
+              foundVowel = true;
+            }
+          }
+        }
+
+        if (!foundVowel)
+          pParsedPhonemes[parsedPhonemeCount] = (PhonemeType)i;
+
         parsedPhonemeCount++;
         offset += phonemeLength;
         break;
