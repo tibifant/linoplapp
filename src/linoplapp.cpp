@@ -88,7 +88,7 @@ X(pt_comma) \
 X(pt_stressed)
 
 #define SEPERATE_WITH_COMMA(a) a,
-#define FILEPATH(a) #a".wav"
+#define FILEPATH(a) "audio\\"#a".wav",
 
 enum PhonemeType
 {
@@ -101,7 +101,7 @@ static const char *_PhonemeStrings[_PhonemeType_Count] = { "ˈaɪ̯", "aɪ̯", "
 
 static const char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO(FILEPATH) };
 
-static const PhonemeType _Vowels[18] = { pt_ei, pt_au, pt_assel_long, pt_assel, pt_egoist_long, pt_etwas_long, pt_etwas, pt_imitat_long, pt_innen, pt_oetztal, pt_obelisk_long, pt_eu, pt_ordnung, pt_oel_long, pt_ukulele_long, pt_und, pt_buero_long, pt_uecker };
+static const PhonemeType _UnstressedVowels[18] = { pt_ei, pt_au, pt_assel_long, pt_assel, pt_egoist_long, pt_etwas_long, pt_etwas, pt_imitat_long, pt_innen, pt_oetztal, pt_obelisk_long, pt_eu, pt_ordnung, pt_oel_long, pt_ukulele_long, pt_und, pt_buero_long, pt_uecker };
 
 struct Phoneme 
 {
@@ -167,29 +167,36 @@ void ReadFile(const char *filename, uint8_t **ppData, size_t *pSize)
 
 static void LoadPhoneme(Phoneme *pPhoneme, const PhonemeType type)
 {
-  // TODO: Handle " " & "." & ","
-  if (type == pt_space)
+  // Handle " " & "." & ","
+  if (type == pt_space || type == pt_dot || type == pt_comma)
   {
-    memset(pPhoneme->pSamples, 0, 160);
-  }
-  else if (type == pt_dot)
-  {
-    memset(pPhoneme->pSamples, 0, 320);
-  }
-  else if (type == pt_comma)
-  {
-    memset(pPhoneme->pSamples, 0, 240);
+    size_t bytes = 0;
+    
+    switch (type)
+    {
+    case pt_space:
+      bytes = 48000 * 10 / 6 * sizeof(uint16_t);
+      break;
+
+    case pt_comma:
+      bytes = 48000 * 10 / 2 * sizeof(uint16_t);
+      break;
+
+    case pt_dot:
+      bytes = 48000 * 10 / 4 * sizeof(uint16_t);
+      break;
+    }
+
+    pPhoneme->pSamples = reinterpret_cast<uint16_t *>(calloc(bytes, 1));
+    PANIC_IF(pPhoneme->pSamples == nullptr);
   }
   else
   {
-    // Get Filename.
-    const char *filename = _PhonemeFileNames[type];
-
     uint8_t *pFileContent = nullptr;
     size_t size = 0;
 
     // Load File
-    ReadFile(filename, &pFileContent, &size);
+    ReadFile(_PhonemeFileNames[type], &pFileContent, &size);
 
     // Parse WAV.
     ASSERT(pFileContent != nullptr);
@@ -313,33 +320,43 @@ int32_t main(const int32_t argc, char **pArgv)
 
       if (offset + phonemeLength <= size && memcmp(pFileContent + offset, _PhonemeStrings[i], phonemeLength) == 0)
       {
-        if (i == _PhonemeType_Count - 1) // Stressed-Symbol is the last.
+        if (i == pt_stressed)
+        {
           isStressed = true;
-        bool foundVowel = false;
+          offset += phonemeLength;
+          break;
+        }
 
         if (isStressed)
         {
-          if (i == pt_space)
+          if (i == pt_space || i == pt_comma || i == pt_dot) // if we didn't find a vowel.
           {
             printf("Heureka! Somewhere in your input file has been a vowel of which a stressed version should be added. (Word before position %" PRIu64 ".)\n", offset);
             ASSERT(false);
+            isStressed = false;
+            offset += phonemeLength;
+            break;
           }
 
-          for (size_t j = 0; j < ARRAYSIZE(_Vowels); j++)
+          bool found = false;
+
+          for (size_t j = 0; j < ARRAYSIZE(_UnstressedVowels); j++)
           {
-            if (i == j)
+            if (i == _UnstressedVowels[j])
             {
-              pParsedPhonemes[parsedPhonemeCount] = (PhonemeType)(i - 1); // The stressed version of a vowel always comes one before the vowel.
+              pParsedPhonemes[parsedPhonemeCount++] = (PhonemeType)(i - 1); // The stressed version of a vowel always comes one before the vowel.
+              offset += phonemeLength;
               isStressed = false;
-              foundVowel = true;
+              found = true;
+              break;
             }
           }
+
+          if (found)
+            break;
         }
 
-        if (!foundVowel)
-          pParsedPhonemes[parsedPhonemeCount] = (PhonemeType)i;
-
-        parsedPhonemeCount++;
+        pParsedPhonemes[parsedPhonemeCount++] = (PhonemeType)i;
         offset += phonemeLength;
         break;
       }
