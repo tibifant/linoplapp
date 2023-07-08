@@ -103,6 +103,8 @@ static const char *_PhonemeFileNames[_PhonemeType_Count] = { PHONEMETYPE_X_MACRO
 
 static const PhonemeType _UnstressedVowels[18] = { pt_ei, pt_au, pt_assel_long, pt_assel, pt_egoist_long, pt_etwas_long, pt_etwas, pt_imitat_long, pt_innen, pt_oetztal, pt_obelisk_long, pt_eu, pt_ordnung, pt_oel_long, pt_ukulele_long, pt_und, pt_buero_long, pt_uecker };
 
+static const PhonemeType _Vowels[] = { pt_ei_stressed, pt_ei, pt_au_stressed, pt_au, pt_assel_long_stressed, pt_assel_long, pt_assel_stressed, pt_assel, pt_der, pt_besser, pt_egoist_long_stressed, pt_egoist_long, pt_egoist, pt_etwas_long_stressed, pt_etwas_long, pt_etwas_stressed, pt_etwas, pt_schwa, pt_studie, pt_imitat_long_stressed, pt_imitat_long, pt_imitat, pt_innen_stressed, pt_innen, pt_oetztal_stressed, pt_oetztal, pt_toalette, pt_obelisk_long_stressed, pt_obelisk_long, pt_obelisk, pt_eu_stressed, pt_eu, pt_ordnung_stressed, pt_ordnung, pt_oel_long_stressed, pt_oel_long, pt_oel, pt_linguistik, pt_ukulele_long_stressed, pt_ukulele_long, pt_ukulele, pt_ui, pt_und_stressed, pt_und, pt_buero_long_stressed, pt_buero_long, pt_buero,pt_uecker_stressed, pt_uecker };
+
 struct Phoneme 
 {
   bool loaded = false;
@@ -232,6 +234,8 @@ static Phoneme GetPhoneme(const PhonemeType type)
     return *pCurrent;
 
   LoadPhoneme(pCurrent, type);
+
+  pCurrent->loaded = true;
 
   return *pCurrent;
 }
