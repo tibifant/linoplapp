@@ -11,3 +11,5 @@ This project experiments with turning IPA-notated text into speech (or at least 
   <summary>Listen to a beautiful audio sample of a german tongue twister</summary>
   https://github.com/user-attachments/assets/6fff9a01-3ea3-4e1c-9ab8-88763b662ed1
 </details>
+
+![Audio](./assets/out.mp4)
