@@ -6,3 +6,5 @@ This project experiments with turning IPA-notated text into speech (or at least 
 - Output: vocalized text as .wav file
 
 (Including short, fast and simple .wav writer.)
+
+<audio controls="1" controlslist="nodownload nofullscreen noremoteplayback" src="assets/out.wav">Your browser does not support the audio tag.</audio>
